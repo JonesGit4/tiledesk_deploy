@@ -14,37 +14,39 @@ services:
       placement:
         constraints:
           - node.hostname == workerserver02
-
-  redis:
-    image: redis:6.2
-    networks:
-      network_public:
-        aliases:
-          - redis
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.hostname == workerserver02
-
+  
   rabbitmq:
-    image: rabbitmq:3.8-management
-    environment:
-      RABBITMQ_DEFAULT_USER: "guest"
-      RABBITMQ_DEFAULT_PASS: "guest"
-    networks:
-      network_public:
-        aliases:
-          - rabbitmq
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.hostname == workerserver02
+      image: rabbitmq:3.8-management
+      environment:
+        RABBITMQ_DEFAULT_USER: "guest"
+        RABBITMQ_DEFAULT_PASS: "guest"
+      networks:
+        network_public:
+          aliases:
+            - rabbitmq
+      deploy:
+        replicas: 1
+        placement:
+          constraints:
+            - node.hostname == workerserver02
 
   tiledesk:
     image: jonesdockerhub/docker_jones:2.10.82
-    command: ["sh", "-c", "until nc -z mongodb 27017; do echo Waiting for mongodb; sleep 2; done; npm start"]
+    command:
+      - sh
+      - -c
+      - |
+        echo "🚧 Aguardando serviços..."
+        until nc -z mongodb 27017 \
+           && nc -z redis 6379 \
+           && nc -z rabbitmq 5672; do
+          echo "   - MongoDB? $(nc -z mongodb 27017 && echo OK || echo NOK)"
+          echo "   - Redis?   $(nc -z redis 6379   && echo OK || echo NOK)"
+          echo "   - Rabbit?  $(nc -z rabbitmq 5672 && echo OK || echo NOK)"
+          sleep 2
+        done
+        echo "✅ Todos os serviços up! Iniciando Tiledesk..."
+        npm start
     environment:
       PORT: "3000"
       LOG_LEVEL: "debug"
@@ -57,6 +59,10 @@ services:
       MONGODB_LOGS_URI: "mongodb://mongodb:27017/tiledesk-logs"
       EMAIL_ENABLED: "false"
       REDIS_URL: "redis://redis:6379"
+      REDIS_URI: "redis://redis:6379"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      API_ENDPOINT: "http://tiledesk:3000"
       AMQP_URI: "amqp://guest:guest@rabbitmq:5672"
       EXTERNAL_BASE_URL: "https://inbox.duobro.com.br"
       EXTERNAL_MQTT_BASE_URL: "wss://inbox.duobro.com.br"
