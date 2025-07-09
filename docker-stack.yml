@@ -43,7 +43,7 @@ services:
           - node.hostname == workerserver02
 
   tiledesk:
-    image: my-tiledesk-server:v2.10.82
+    image: jonesdockerhub/docker_jones:2.10.82
     command: ["sh", "-c", "until nc -z mongodb 27017; do echo Waiting for mongodb; sleep 2; done; npm start"]
     environment:
       PORT: "3000"
