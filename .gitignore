@@ -1,0 +1,4 @@
+# Logs e temporários
+*.log
+*.pid
+.env
